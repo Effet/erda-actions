@@ -42,7 +42,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Printf("action meta: release_id=%s", releaseID)
+	fmt.Printf("action meta: release_id=%s\n", releaseID)
 }
 
 func getAppID(hc *httpclient.HTTPClient, name string) (string, error) {

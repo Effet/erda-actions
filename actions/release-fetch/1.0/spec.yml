@@ -16,3 +16,12 @@ params:
 outputs:
   - name: release_id
     desc: release id got from query
+
+accessibleAPIs:
+  - path: /api/applications
+    method: GET
+    schema: http
+
+  - path: /api/releases
+    method: GET
+    schema: http
