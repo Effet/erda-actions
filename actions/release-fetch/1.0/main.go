@@ -13,6 +13,7 @@ import (
 type Conf struct {
 	ApplicationName string `env:"ACTION_APPLICATION_NAME" required:"true"`
 	Branch          string `env:"ACTION_BRANCH" required:"true"`
+	CheckCommit     string `env:"ACTION_CHECK_COMMIT" required:"false"`
 
 	// sys
 	DiceProjectID    string `env:"DICE_PROJECT_ID" required:"true"`
@@ -37,12 +38,22 @@ func main() {
 	}
 
 	// get release
-	releaseID, err := getReleaseID(hc, appID)
+	release, err := getRelease(hc, appID)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("action meta: release_id=%s\n", releaseID)
+	fmt.Printf("action meta: release_id=%s\n", release.ReleaseID)
+	fmt.Printf("action meta: release_branch=%s\n", release.Labels["gitBranch"])
+	fmt.Printf("action meta: release_commit=%s\n", release.Labels["gitCommitId"])
+	fmt.Printf("action meta: release_commit_message=%s\n", release.Labels["gitCommitMessage"])
+
+	// check commit
+	if conf.CheckCommit != "" {
+		if conf.CheckCommit != release.Labels["gitCommitId"] {
+			panic("commit id not match")
+		}
+	}
 }
 
 func getAppID(hc *httpclient.HTTPClient, name string) (string, error) {
@@ -65,7 +76,7 @@ func getAppID(hc *httpclient.HTTPClient, name string) (string, error) {
 	return strconv.FormatUint(resp.Data.List[0].ID, 10), nil
 }
 
-func getReleaseID(hc *httpclient.HTTPClient, appID string) (string, error) {
+func getRelease(hc *httpclient.HTTPClient, appID string) (*apistructs.ReleaseGetResponseData, error) {
 	var resp apistructs.ReleaseListResponse
 	// fetch release
 	r, err := hc.Get(conf.DiceOpenapiAddr).
@@ -77,13 +88,13 @@ func getReleaseID(hc *httpclient.HTTPClient, appID string) (string, error) {
 		Param("pageSize", "1").
 		Header("Authorization", conf.DiceOpenapiToken).Do().JSON(&resp)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if !r.IsOK() || !resp.Success {
-		return "", fmt.Errorf(resp.Error.Msg)
+		return nil, fmt.Errorf(resp.Error.Msg)
 	}
 	if resp.Data.Total == 0 || len(resp.Data.Releases) == 0 {
-		return "", fmt.Errorf("release not found")
+		return nil, fmt.Errorf("release not found")
 	}
-	return resp.Data.Releases[0].ReleaseID, nil
+	return &resp.Data.Releases[0], nil
 }
