@@ -40,20 +40,26 @@ func main() {
 	// get release
 	release, err := getRelease(hc, appID)
 	if err != nil {
+		echoMeta("Error", "commit id not match")
 		panic(err)
 	}
 
-	fmt.Printf("action meta: release_id=%s\n", release.ReleaseID)
-	fmt.Printf("action meta: release_branch=%s\n", release.Labels["gitBranch"])
-	fmt.Printf("action meta: release_commit=%s\n", release.Labels["gitCommitId"])
-	fmt.Printf("action meta: release_commit_message=%s\n", release.Labels["gitCommitMessage"])
+	echoMeta("release_id", release.ReleaseID)
+	echoMeta("release_branch", release.Labels["gitBranch"])
+	echoMeta("release_commit", release.Labels["gitCommitId"])
+	echoMeta("release_commit_message", release.Labels["gitCommitMessage"])
 
 	// check commit
 	if conf.CheckCommit != "" {
 		if conf.CheckCommit != release.Labels["gitCommitId"] {
+			echoMeta("Error", "commit id not match")
 			panic("commit id not match")
 		}
 	}
+}
+
+func echoMeta(k, v string) {
+	fmt.Printf("action meta: %s=%s\n", k, v)
 }
 
 func getAppID(hc *httpclient.HTTPClient, name string) (string, error) {
